@@ -31,7 +31,23 @@ jobs:
         enable-stack: true
         cabal-update: false
 
+    - name: Restore cache from approximate key
+      uses: actions/cache/restore@v4
+      id:   cache
+      with:
+        path: ${{ steps.setup.outputs.stack-root }}
+        key:  ${{ matrix.os }}-plan-${{ hashFiles('ci-stack-win.cabal', 'stack.yaml') }}
+        restore-keys: |
+              ${{ matrix.os }}-
+
     - run: stack build --system-ghc --fast --only-dependencies
     - run: stack build --system-ghc --fast
     - run: |
-        stack run --system-ghc --fast -- <<< 42
+        stack run --system-ghc -- <<< 42
+
+    - name: Save cache
+      uses: actions/cache/save@v4
+      if:   always() && steps.cache.outputs.cache-matched-key != steps.cache.outputs.cache-primary-key
+      with:
+        key:  ${{ steps.cache.outputs.cache-primary-key }}
+        path: ${{ steps.setup.outputs.stack-root }}
